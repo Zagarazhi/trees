@@ -15,5 +15,11 @@ public class App {
         bt.tour();
         System.out.println("Искомое число: 123");
         System.out.println("Ближайшее число, меньше или равное искомому: " + bt.search(123).toString());
+
+        BPlusTree bpt = new BPlusTree(ra, 5);
+        bpt.print();
+        bpt.tour();
+        System.out.println("Искомое число: 123");
+        System.out.println("Ближайшее число, меньше или равное искомому: " + bpt.search(123));
     }
 }

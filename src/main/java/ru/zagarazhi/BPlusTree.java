@@ -1,166 +1,144 @@
 package ru.zagarazhi;
 
-public class BPlusTree {  
+public class BPlusTree {
+    private class Node {
+        public boolean isLeaf;
+        public int level;
+        public int[] keys;
+        public Node[] child;
+        public Node next;
 
-    private int factor;  
-      
-    private static final int DEFAULT_FACTOR = 5;
-    private int MAX_CHILDREN_FOR_INTERNAL;
-    private int MAX_FOR_LEAF;
-      
-    private Node root;  
-      
-    public BPlusTree() {  
-        this(DEFAULT_FACTOR);  
-    }  
-      
-    public BPlusTree(int factor) {  
-        this.factor = factor;
-        this.MAX_CHILDREN_FOR_INTERNAL = this.factor;
-        this.MAX_FOR_LEAF = this.factor - 1;  
-        this.root = new LeafNode();  
-    }
-
-    abstract class Node {  
-          
-        protected Node parent;
-        protected int[] keys;
-        protected int size;
-        abstract Node insert(int key);
-    }
-
-    class InternalNode extends Node{  
-        private Node[] pointers;  
-          
-        public InternalNode() {  
-            this.size = 0;  
-            this.pointers = new Node[MAX_CHILDREN_FOR_INTERNAL + 1];  
-            this.keys = new int[MAX_CHILDREN_FOR_INTERNAL];  
-        }  
-          
-        public Node insert(int key) {  
-            int i = 0;  
-            for (; i < this.size; i++) {  
-                if (key < this.keys[i])  break;  
-            }
-            return this.pointers[i].insert(key);  
+        public Node(boolean isLeaf, int level) {
+            this.isLeaf = isLeaf;
+            this.level = level;
         }
 
-        private Node insert(int key, Node leftChild, Node rightChild){  
-            if (this.size == 0) {  
-                this.size++;  
-                this.pointers[0] = leftChild;  
-                this.pointers[1] = rightChild;  
-                this.keys[0] = key;  
-                  
-                leftChild.parent = this;  
-                rightChild.parent = this;  
-                  
-                return this;  
+        public void print() {
+            for(int i = 0; i < 2 * level; i++) {
+                System.out.print("\t");
             }
-            int[] newKeys = new int[MAX_CHILDREN_FOR_INTERNAL + 1];  
-            Node[] newPointers = new Node[MAX_CHILDREN_FOR_INTERNAL + 2];  
-              
-            int i = 0;  
-            for(; i < this.size; i++) {  
-                int curKey = this.keys[i];  
-                if (curKey > key) break;  
-            }
-            System.arraycopy(this.keys, 0, newKeys, 0, i);  
-            newKeys[i] = key;  
-            System.arraycopy(this.keys, i, newKeys, i + 1, this.size - i);  
-              
-            System.arraycopy(this.pointers, 0, newPointers, 0, i + 1);  
-            newPointers[i + 1] = rightChild;  
-            System.arraycopy(this.pointers, i + 1, newPointers, i + 2, this.size - i);  
-  
-            this.size++;  
-            if(this.size <= MAX_CHILDREN_FOR_INTERNAL) {  
-                System.arraycopy(newKeys, 0, this.keys, 0, this.size);  
-                System.arraycopy(newPointers, 0, this.pointers, 0, this.size + 1);  
-                return null;  
-            }  
-              
-            int m = (this.size / 2);  
-
-            InternalNode newNode = new InternalNode();  
-              
-            newNode.size = this.size - m - 1;  
-            System.arraycopy(newKeys, m + 1, newNode.keys, 0, this.size - m - 1);  
-            System.arraycopy(newPointers, m + 1, newNode.pointers, 0, this.size - m);  
-             
-            for(int j = 0; j <= newNode.size; j++) {  
-                newNode.pointers[j].parent = newNode;  
-            }  
-              
-            this.size = m;  
-            this.keys = new int[MAX_CHILDREN_FOR_INTERNAL];  
-            this.pointers = new Node[MAX_CHILDREN_FOR_INTERNAL];  
-            System.arraycopy(newKeys, 0, this.keys, 0, m);  
-            System.arraycopy(newPointers, 0, this.pointers, 0, m + 1);  
-              
-            if (this.parent == null) {  
-                this.parent = new InternalNode();  
-            }  
-            newNode.parent = this.parent;  
-              
-            return ((InternalNode)this.parent).insert(newKeys[m], this, newNode);  
-        }  
-    }
-    
-    class LeafNode extends Node {
-          
-        public LeafNode() {  
-            this.size = 0;  
-            this.keys = new int[MAX_FOR_LEAF]; 
-            this.parent = null;  
-        }  
-          
-        public Node insert(int key) {  
-            Object[] newKeys = new Object[MAX_FOR_LEAF + 1];
-              
-            int i = 0;  
-            for (; i < this.size; i++) {  
-                int curKey = this.keys[i];  
-                  
-                if (curKey == key) {
-                    return null;  
+            System.out.println(stringKeys());
+            if(child != null){
+                for(int i = 0; i < child.length; i++) {
+                    child[i].print();
                 }
-                if (curKey > key) break;  
-            }  
-              
-            System.arraycopy(this.keys, 0, newKeys, 0, i);  
-            newKeys[i] = key;  
-            System.arraycopy(this.keys, i, newKeys, i + 1, this.size - i);    
-              
-            this.size++;  
-              
-            if (this.size <= MAX_FOR_LEAF){  
-                System.arraycopy(newKeys, 0, this.keys, 0, this.size);  
-                return null;  
             }
+        }
 
-            int m = this.size / 2;  
-              
-            this.keys = new int[MAX_FOR_LEAF];
-            System.arraycopy(newKeys, 0, this.keys, 0, m);
-              
-            LeafNode newNode = new LeafNode();  
-            newNode.size = this.size - m;  
-            System.arraycopy(newKeys, m, newNode.keys, 0, newNode.size);
-              
-            this.size = m;  
-              
-            if (this.parent == null) {  
-                this.parent = new InternalNode();  
-            }  
-            newNode.parent = this.parent;  
-              
-            return ((InternalNode)this.parent).insert(newNode.keys[0], this, newNode);  
+        public int search(int number){
+            if(isLeaf) {
+                int ans = keys[0];
+                for(int i = 1; i < keys.length; i++) {
+                    if(keys[i] <= number){
+                        ans = keys[i];
+                    }
+                }
+                return ans;
+            }
+            if(number > keys[keys.length - 1]) return child[child.length - 1].search(number);
+            int bias = 0;
+            while(keys[bias] < number) {
+                bias++;
+            }
+            return child[bias].search(number);
+        }
+
+        public String stringKeys() {
+            StringBuilder sb = new StringBuilder("[");
+            for(int i = 0; i < keys.length; i++) {
+                if(i != 0) {
+                    sb.append(", " + keys[i]);
+                } else {
+                    sb.append(keys[i]);
+                }
+            }
+            sb.append("]");
+            return sb.toString();
         }
     }
 
-    public void print(){
+    private Node root;
+    private int degree;
 
+    private void sort(int[] array) {
+        int n = array.length;  
+        int temp = 0;  
+        for(int i = 0; i < n; i++){  
+            for(int j = 1; j < (n-i); j++){  
+                if(array[j-1] > array[j]){
+                    temp = array[j-1];  
+                    array[j-1] = array[j];  
+                    array[j] = temp;  
+                }  
+            }  
+        }
     }
-}  
+
+    public BPlusTree(int[] keys, int degree) {
+        this.degree = degree;
+        sort(keys);
+
+        root = new Node(false, 0);
+        int[] tempK = new int[1];
+        tempK[0] = keys[keys.length / 2 - 2];
+        root.keys = tempK;
+
+        Node[] temp = new Node[2 * keys.length / degree + 1];
+        for(int i = 0; i < temp.length - 1; i++) {
+            temp[i] = new Node(true, 2);
+            temp[i].keys = new int[2];
+            temp[i].keys[0] = keys[2 * i];
+            temp[i].keys[1] = keys[2 * i + 1];
+            if(i != 0) {
+                temp[i - 1].next = temp[i];
+            }
+        }
+        temp[temp.length - 1] = new Node(true, 2);
+        temp[temp.length - 1].keys = new int[4];
+        temp[temp.length - 2].next = temp[temp.length - 1];
+        for(int i = 0; i < 4; i++) {
+            temp[temp.length - 1].keys[i] = keys[i + 12];
+        }
+
+        root.child = new Node[2];
+        root.child[0] = new Node(false, 1);
+        root.child[0].keys = new int[2];
+        root.child[0].child = new Node[3];
+        for(int i = 0; i < root.child[0].child.length; i++){
+            root.child[0].child[i] = temp[i];
+            if(i != 0){
+                root.child[0].keys[i - 1] = temp[i].keys[0];
+            }
+        }
+
+        int bias = root.child[0].child.length;
+        root.child[1] = new Node(false, 1);
+        root.child[1].keys = new int[3];
+        root.child[1].child = new Node[4];
+        for(int i = 0; i < root.child[1].child.length; i++){
+            root.child[1].child[i] = temp[i + bias];
+            if(i != 0){
+                root.child[1].keys[i - 1] = temp[i + bias].keys[0];
+            }
+        }
+    }
+
+    public void tour() {
+        Node temp = root;
+        while(!temp.isLeaf){
+            temp = temp.child[0];
+        }
+        while(temp != null) {
+            System.out.println(temp.stringKeys());
+            temp = temp.next;
+        }
+    }
+
+    public void print() {
+        root.print();
+    }
+
+    public int search(int number) {
+        return root.search(number);
+    }
+}
